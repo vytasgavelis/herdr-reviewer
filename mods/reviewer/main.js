@@ -44,6 +44,9 @@ const SCOPES = ["work", "last", "branch"];
 const codeFont = () => (typeof settings().font === "string" && settings().font) || "JetBrains Mono";
 const codeSize = () => Number(props()?.font_size) || Math.max(9, (Number(settings().font_size) || 14) - 1);
 const rowOf = (size) => Math.round(size * 1.8);
+// v_virtual_list spaces items in unzoomed px while h() follows zoom (herdr-app
+// 0.1.11), so item sizes are scaled here to keep rows from overlapping.
+const zoom = () => Number(settings().zoom) || 1;
 const charOf = (size) => size * 0.62;
 
 // A row's identity across reloads: its kind, number and text.
@@ -605,7 +608,7 @@ export default class Changes extends View {
       .child(h_flex().flex_1().min_h(0).items_stretch()
         .child(div().flex_1().min_w(0).min_h(0).relative().font_family(codeFont()).text_size(this.fontSize)
         .child(div().id("changes-diff-x").size_full().overflow_x_scrollbar()
-          .child(div().w_full().min_w(this.diffWidth).h_full().child(v_virtual_list("changes-diff", this.items.length, this.sizes.length ? this.sizes : this.row, (i) => this.items[i].key,
+          .child(div().w_full().min_w(this.diffWidth).h_full().child(v_virtual_list("changes-diff", this.items.length, this.sizes.length ? this.sizes.map((n) => n * zoom()) : this.row * zoom(), (i) => this.items[i].key,
             (range) => this.items.slice(range.start, range.end).map((it) => this.item(it, t, colors, target, commented))).size_full().track_scroll(this.scroll)
             .on_item_click((k, cx) => { if (k.startsWith("c:")) { if (k.slice(2) !== this.composer?.editing) this.editComment(k.slice(2), cx); } else this.clickRow(Number(k.slice(2)), cx); })
             .on_item_secondary_click((k, _e, cx) => { if (!k.startsWith("r:")) return; const i = Number(k.slice(2)); const r = this.rows[i]; if (!r || r.kind === "") return; this.askAbout(r.kind === "@" ? this.rows.map((_r, j) => j).filter((j) => this.rows[j].hunk === i && this.rows[j].kind !== "") : [i], cx); }))))
